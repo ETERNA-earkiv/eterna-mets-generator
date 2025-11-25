@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>se.whitered.eterna.plugins</groupId>
+    <artifactId>mets-generator</artifactId>
+
+    <name>METS Generator</name>
+    <version>1.0.0</version>
+    <description>Updates AIPs &amp; representations with E-ARK IP METS files.</description>
+
+    <parent>
+        <groupId>org.roda-project</groupId>
+        <artifactId>eterna</artifactId>
+        <version>0.5.0-dev</version>
+    </parent>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <eterna.plugin.class>se.whitered.eterna.plugins.metsgenerator.MetsGeneratorPlugin</eterna.plugin.class>
+    </properties>
+
+    <repositories>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages</name>
+            <url>https://maven.pkg.github.com/ETERNA-earkiv/eterna</url>
+        </repository>
+    </repositories>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifestEntries>
+                            <ETERNA-Plugin>${eterna.plugin.class}</ETERNA-Plugin>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <encoding>UTF-8</encoding>
+                    <propertiesEncoding>UTF-8</propertiesEncoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.7.1</version>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                        <configuration>
+                            <descriptors>
+                                <descriptor>src/assembly/src.xml</descriptor>
+                            </descriptors>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <attach>false</attach>
+                    <finalName>${project.artifactId}</finalName>
+                    <appendAssemblyId>false</appendAssemblyId>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-plugin-to-dev-env</id>
+                        <phase>install</phase> <!-- or 'package' -->
+                        <configuration>
+                            <target>
+                                <delete dir="${env.ETERNA_HOME}/config/plugins/${project.artifactId}" quiet="true" />
+                                <mkdir dir="${env.ETERNA_HOME}/config/plugins/${project.artifactId}" />
+                                <copy todir="${env.ETERNA_HOME}/config/plugins/${project.artifactId}" overwrite="true">
+                                    <fileset dir="${project.build.directory}/${project.artifactId}" />
+                                </copy>
+                            </target>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>3.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>3.2.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.roda-project</groupId>
+            <artifactId>roda-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.roda-project</groupId>
+            <artifactId>roda-core-tests</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+</project>
