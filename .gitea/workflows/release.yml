@@ -118,7 +118,7 @@ jobs:
       - name: Release artifacts
         uses: https://gitea.com/actions/release-action@main
         with:
-          files: target/${{ vars.PLUGIN_ZIP}}
+          files: target/${{ vars.$PLUGIN_BASENAME }}.zip
           title: ${{ gitea.ref_name }}
           body: |
             ## ${{ vars.PLUGIN_NAME }} Plugin ${{ gitea.ref_name }}
@@ -129,7 +129,7 @@ jobs:
             ${{ env.RELEASE_NOTES }}
             
             ### Installation
-            [Download](${{ gitea.server_url }}/${{ gitea.repository }}/releases/download/${{ gitea.ref_name }}/${{ vars.PLUGIN_ZIP}}) and extract the plugin zip to your ETERNA plugins directory.
+            [Download](${{ gitea.server_url }}/${{ gitea.repository }}/releases/download/${{ gitea.ref_name }}/${{ vars.$PLUGIN_BASENAME }}.zip) and extract the plugin zip to your ETERNA plugins directory.
           insecure: true
           api_key: ${{ secrets.CICD_GITEA_TOKEN }}
       
