@@ -13,10 +13,6 @@ public class MetsGeneratorException extends PluginException  {
         super(throwable);
     }
 
-    public MetsGeneratorException(final String message, final Throwable throwable) {
-        super(message, throwable);
-    }
-
     public void warn(final Report reportItem) {
         reportItem.setPluginState(PluginState.PARTIAL_SUCCESS).addPluginDetails(this.getMessage() + "\n");
     }
