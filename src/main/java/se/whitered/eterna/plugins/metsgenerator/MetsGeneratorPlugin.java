@@ -269,7 +269,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      */
     @Override
     public List<String> getCategories() {
-        return Collections.singletonList(RodaConstants.PLUGIN_CATEGORY_MAINTENANCE);
+        return Collections.singletonList(RodaConstants.PLUGIN_CATEGORY_MISC);
     }
 
     /**
