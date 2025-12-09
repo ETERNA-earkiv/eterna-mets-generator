@@ -29,7 +29,7 @@ public class MetsContentPayload implements ContentPayload {
      * Create a new input stream that should be explicitly closed after being
      * consumed.
      *
-     * @return
+     * @throws UnsupportedOperationException Throws UnsupportedOperationException unconditionally
      */
     @Override
     public InputStream createInputStream() throws UnsupportedOperationException {
@@ -39,8 +39,8 @@ public class MetsContentPayload implements ContentPayload {
     /**
      * Write the current stream to the specified file path.
      *
-     * @param path
-     * @throws IOException
+     * @param path - Path to the METS file to write
+     * @throws IOException - Throws IOException if it fails to serialize and create the METS file
      */
     @Override
     public void writeToPath(Path path) throws IOException {
@@ -65,7 +65,7 @@ public class MetsContentPayload implements ContentPayload {
     /**
      * Retrieves a URI for the file (e.g. 'file:', 'http:', etc.)
      *
-     * @return
+     * @throws UnsupportedOperationException Throws UnsupportedOperationException unconditionally
      */
     @Override
     public URI getURI() throws UnsupportedOperationException {
