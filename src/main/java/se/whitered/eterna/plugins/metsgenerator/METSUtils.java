@@ -93,11 +93,11 @@ public class METSUtils {
         storageService = RodaCoreFactory.getStorageService();
     }
 
-    public static MetsWrapper generateMETS(AIP aip, CSIPProfile profile, Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
-        return generateMETS(aip, null, profile, reportItem);
+    public static MetsWrapper generateMETS(AIP aip, CSIPProfile profile, Boolean includeAncestors, Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
+        return generateMETS(aip, null, profile, includeAncestors, reportItem);
     }
 
-    public static MetsWrapper generateMETS(AIP aip, Representation representation, CSIPProfile profile, final Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
+    public static MetsWrapper generateMETS(AIP aip, Representation representation, CSIPProfile profile, Boolean includeAncestors, final Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
         final String aipId = aip.getId();
         final String repId = representation != null ? representation.getId() : null;
         final IndexedAIP indexedAIP = getIndexedAIP(aipId, reportItem);
@@ -137,7 +137,7 @@ public class METSUtils {
                     representation == null ? indexedAIP.getDescription() : null,
                     profile.getProfileURI(),
                     representation == null,
-                    representation == null ? Optional.ofNullable(indexedAIP.getAncestors()) : Optional.empty(),
+                    representation == null && includeAncestors ? Optional.ofNullable(indexedAIP.getAncestors()) : Optional.empty(),
                     null, // Path MetsPath
                     ipHeader,
                     profile.getProfile().toString(),
@@ -176,7 +176,7 @@ public class METSUtils {
         processDocumentation(metsWrapper, aipId, repId, reportItem);
 
         if (repId == null) {
-            processRepresentations(metsWrapper, aip, profile, reportItem);
+            processRepresentations(metsWrapper, aip, profile, includeAncestors, reportItem);
         }
 
         return metsWrapper;
@@ -592,13 +592,13 @@ public class METSUtils {
         }
     }
 
-    private static void processRepresentations(final MetsWrapper metsWrapper, final AIP aip, final CSIPProfile profile, final Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
+    private static void processRepresentations(final MetsWrapper metsWrapper, final AIP aip, final CSIPProfile profile, final Boolean includeAncestors, final Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
         final String aipId = aip.getId();
 
         for (Representation rep : aip.getRepresentations()) {
             try {
                 final String repId = rep.getId();
-                final MetsWrapper repMetsWrapper = METSUtils.generateMETS(aip, rep, profile, reportItem);
+                final MetsWrapper repMetsWrapper = METSUtils.generateMETS(aip, rep, profile, includeAncestors, reportItem);
                 repMetsWrapper.getMainDiv().setTYPE(rep.getType()); // TODO: Check if rep.getType is the same as representation.getStatus in commons ip: https://github.com/keeps/commons-ip/blob/9f2ead8a297d6515d2018c4351de9cf89a1efaff/src/main/java/org/roda_project/commons_ip2/model/impl/eark/EARKUtils.java#L265
 
                 final Mets mets = repMetsWrapper.getMets();
