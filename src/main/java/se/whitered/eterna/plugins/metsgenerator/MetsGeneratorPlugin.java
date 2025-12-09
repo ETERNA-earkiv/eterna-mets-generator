@@ -36,16 +36,13 @@ import org.roda.core.plugins.orchestrate.pekko.PekkoJobStateInfoActor;
 import org.roda.core.plugins.orchestrate.pekko.PekkoWorkerActor;
 import org.roda.core.storage.DefaultStoragePath;
 import org.roda.core.storage.StorageService;
-import org.roda_project.commons_ip.utils.IPException;
 import org.roda_project.commons_ip2.mets_v1_12.beans.Mets;
 import org.roda_project.commons_ip2.model.IPConstants;
 import org.roda_project.commons_ip2.model.MetsWrapper;
 import se.whitered.eterna.plugins.metsgenerator.exceptions.MetsGeneratorException;
 
-import javax.xml.datatype.DatatypeConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -290,11 +287,9 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
     /**
      * <p>Method called to initialize this {@link Plugin}.</p>
      * <p>Called by {@link PluginManager#registerPlugin(Plugin plugin)} on startup or when a new plugin is placed in the plugins directory.</p>
-     *
-     * @throws PluginException thrown if initialization of the plugin failed
      */
     @Override
-    public void init() throws PluginException {
+    public void init()  {
         MimeTypeUtils.init();
         System.out.println("Init METS Generator");
     }
@@ -312,17 +307,16 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
 
     /**
      * <p>Method called before executing the main action of the plugin.</p>
-     * <p>Useful to setup the job before executing a job with many sub tasks.</p>
+     * <p>Useful to set up the job before executing a job with many subtasks.</p>
      * <p>Called by {@link PekkoJobStateInfoActor}.handleBeforeAllExecuteIsReady(Object msg)</p>
      *
      * @param indexService   reference to {@link IndexService}
      * @param modelService   reference to {@link ModelService}
      * @param storageService reference to {@link StorageService}
      * @return {@link Report} containing the status, progress and diagnostics for the job
-     * @throws PluginException if an error occurred during execution
      */
     @Override
-    public Report beforeAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) throws PluginException {
+    public Report beforeAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) {
         return new Report();
     }
 
@@ -410,10 +404,9 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      * @param modelService   reference to {@link ModelService}
      * @param storageService reference to {@link StorageService}
      * @return {@link Report} containing the status, progress and diagnostics for the job
-     * @throws PluginException if an error occurred during execution
      */
     @Override
-    public Report afterAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) throws PluginException {
+    public Report afterAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) {
         return new Report();
     }
 
