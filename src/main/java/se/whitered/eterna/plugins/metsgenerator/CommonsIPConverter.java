@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Collections;
+import java.util.Date;
 import java.util.GregorianCalendar;
 
 import static se.whitered.eterna.plugins.metsgenerator.METSUtils.createXmlGregorianCalender;
@@ -72,12 +73,18 @@ public class CommonsIPConverter {
         switch (preservationMetadata.getType()) {
             case EVENT:
                 IndexedPreservationEvent preservationEvent = indexService.retrieve(IndexedPreservationEvent.class, preservationMetadata.getId(), Collections.emptyList());
-                ipMetadata.setCreateDate(createXmlGregorianCalender(preservationEvent.getEventDateTime()));
+                Date eventDateTime = preservationEvent.getEventDateTime();
+                if (eventDateTime != null) {
+                    ipMetadata.setCreateDate(createXmlGregorianCalender(eventDateTime));
+                }
                 break;
 
             case AGENT:
                 IndexedPreservationAgent preservationAgent = indexService.retrieve(IndexedPreservationAgent.class, preservationMetadata.getId(), Collections.emptyList());
-                ipMetadata.setCreateDate(createXmlGregorianCalender(preservationAgent.getCreatedOn()));
+                Date agentCreatedOn = preservationAgent.getCreatedOn();
+                if (agentCreatedOn != null) {
+                    ipMetadata.setCreateDate(createXmlGregorianCalender(agentCreatedOn));
+                }
                 break;
 
             default:

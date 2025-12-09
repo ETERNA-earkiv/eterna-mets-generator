@@ -93,11 +93,11 @@ public class METSUtils {
         storageService = RodaCoreFactory.getStorageService();
     }
 
-    public static MetsWrapper generateMETS(AIP aip, CSIPProfile profile, Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
-        return generateMETS(aip, null, profile, reportItem);
+    public static MetsWrapper generateMETS(AIP aip, CSIPProfile profile, Boolean includeAncestors, Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
+        return generateMETS(aip, null, profile, includeAncestors, reportItem);
     }
 
-    public static MetsWrapper generateMETS(AIP aip, Representation representation, CSIPProfile profile, final Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
+    public static MetsWrapper generateMETS(AIP aip, Representation representation, CSIPProfile profile, Boolean includeAncestors, final Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
         final String aipId = aip.getId();
         final String repId = representation != null ? representation.getId() : null;
         final IndexedAIP indexedAIP = getIndexedAIP(aipId, reportItem);
@@ -106,7 +106,7 @@ public class METSUtils {
         final METSGeneratorFactory factory = new METSGeneratorFactory();
         final EARKMETSCreator metsCreator = factory.getGenerator(SIP_VERSION);
 
-        final IPHeader ipHeader = getIpHeader(indexedAIP);
+        final IPHeader ipHeader = getIpHeader(aip);
 
         boolean isMetadata;
         boolean isMetadataOther;
@@ -117,13 +117,13 @@ public class METSUtils {
         boolean isRepresentationsData;
 
         try {
-            isMetadata = containsMetadata(indexedAIP, indexedRepresentation);
-            isMetadataOther = containsMetadataOther(indexedAIP, indexedRepresentation);
-            isSchemas = containsSchemas(indexedAIP, indexedRepresentation);
-            isDocumentation = containsDocumentation(indexedAIP, indexedRepresentation);
-            isSubmission = containsSubmissions(indexedAIP, indexedRepresentation);
-            isRepresentations = containsRepresentations(indexedAIP, indexedRepresentation);
-            isRepresentationsData = containsRepresentationData(indexedAIP, indexedRepresentation);
+            isMetadata = containsMetadata(aip, representation, indexedAIP, indexedRepresentation);
+            isMetadataOther = containsMetadataOther(aip, representation);
+            isSchemas = containsSchemas(aip, representation, indexedAIP, indexedRepresentation);
+            isDocumentation = containsDocumentation(aip, representation, indexedAIP, indexedRepresentation);
+            isSubmission = containsSubmissions(aip, representation, indexedAIP);
+            isRepresentations = containsRepresentations(aip, representation, indexedAIP);
+            isRepresentationsData = containsRepresentationData(aip, representation, indexedRepresentation);
         } catch (AuthorizationDeniedException e) {
             throw new AuthorizationDeniedException("Not authorized to read source AIP");
         } catch (GenericException e) {
@@ -134,10 +134,10 @@ public class METSUtils {
         try {
             metsWrapper = metsCreator.generateMETS(
                     representation == null ? aipId : repId,
-                    representation == null ? indexedAIP.getDescription() : null,
+                    representation == null && indexedAIP != null ? indexedAIP.getDescription() : null,
                     profile.getProfileURI(),
                     representation == null,
-                    representation == null ? Optional.ofNullable(indexedAIP.getAncestors()) : Optional.empty(),
+                    representation == null && indexedAIP != null && includeAncestors ? Optional.ofNullable(indexedAIP.getAncestors()) : Optional.empty(),
                     null, // Path MetsPath
                     ipHeader,
                     profile.getProfile().toString(),
@@ -176,7 +176,7 @@ public class METSUtils {
         processDocumentation(metsWrapper, aipId, repId, reportItem);
 
         if (repId == null) {
-            processRepresentations(metsWrapper, aip, profile, reportItem);
+            processRepresentations(metsWrapper, aip, profile, includeAncestors, reportItem);
         }
 
         return metsWrapper;
@@ -193,7 +193,10 @@ public class METSUtils {
     }
 
     private static void setCreationDate(MetsWrapper metsWrapper, AIP aip) {
-        metsWrapper.getMets().getMetsHdr().setCREATEDATE(createXmlGregorianCalender(aip.getCreatedOn()));
+        Date createdOn = aip.getCreatedOn();
+        if (createdOn != null) {
+            metsWrapper.getMets().getMetsHdr().setCREATEDATE(createXmlGregorianCalender(aip.getCreatedOn()));
+        }
     }
 
     private static IndexedAIP getIndexedAIP(final String aipId, final Report reportItem) {
@@ -282,19 +285,27 @@ public class METSUtils {
         }
     }
 
-    private static boolean containsMetadata(final IndexedAIP aip, final IndexedRepresentation representation) throws AuthorizationDeniedException, GenericException {
-        if (representation == null && aip.getFields().containsKey("descriptiveMetadataId")) {
-            Object descriptiveMetadataIdField = aip.getFields().get("descriptiveMetadataId");
+    private static boolean containsMetadata(final AIP aip, final Representation representation, final IndexedAIP indexedAIP, final IndexedRepresentation indexedRepresentation) throws AuthorizationDeniedException, GenericException {
+        if (indexedRepresentation == null && indexedAIP != null && indexedAIP.getFields().containsKey("descriptiveMetadataId")) {
+            Object descriptiveMetadataIdField = indexedAIP.getFields().get("descriptiveMetadataId");
             if (descriptiveMetadataIdField instanceof List<?> list && !list.isEmpty()) {
                 return true;
             }
         }
 
-        if (representation != null && representation.getFields().containsKey("descriptiveMetadataId")) {
-            Object descriptiveMetadataIdField = representation.getFields().get("descriptiveMetadataId");
+        if (indexedRepresentation != null && indexedRepresentation.getFields().containsKey("descriptiveMetadataId")) {
+            Object descriptiveMetadataIdField = indexedRepresentation.getFields().get("descriptiveMetadataId");
             if (descriptiveMetadataIdField instanceof List<?> list && !list.isEmpty()) {
                 return true;
             }
+        }
+
+        if (representation == null && aip.getDescriptiveMetadata() != null && !aip.getDescriptiveMetadata().isEmpty()) {
+            return true;
+        }
+
+        if (representation != null && representation.getDescriptiveMetadata() != null && !representation.getDescriptiveMetadata().isEmpty()) {
+            return true;
         }
 
         final String aipId = aip.getId();
@@ -335,7 +346,7 @@ public class METSUtils {
         }
     }
 
-    private static boolean containsMetadataOther(final IndexedAIP aip, final IndexedRepresentation representation) throws AuthorizationDeniedException, GenericException {
+    private static boolean containsMetadataOther(final AIP aip, final Representation representation) throws AuthorizationDeniedException, GenericException {
         final String aipId = aip.getId();
         final String repId = representation != null ? representation.getId() : null;
 
@@ -346,8 +357,8 @@ public class METSUtils {
         }
     }
 
-    private static boolean containsSchemas(final IndexedAIP aip, final IndexedRepresentation representation) throws AuthorizationDeniedException, GenericException {
-        if ((representation == null && aip.getNumberOfSchemaFiles() > 0) || (representation != null) && representation.getNumberOfSchemaFiles() > 0) {
+    private static boolean containsSchemas(final AIP aip, final Representation representation, final IndexedAIP indexedAIP, final IndexedRepresentation indexedRepresentation) throws AuthorizationDeniedException, GenericException {
+        if ((indexedRepresentation == null && indexedAIP != null && indexedAIP.getNumberOfSchemaFiles() > 0) || (indexedRepresentation != null && indexedRepresentation.getNumberOfSchemaFiles() > 0)) {
             return true;
         }
 
@@ -361,8 +372,8 @@ public class METSUtils {
         }
     }
 
-    private static boolean containsDocumentation(final IndexedAIP aip, final IndexedRepresentation representation) throws AuthorizationDeniedException, GenericException {
-        if ((representation == null && aip.getNumberOfDocumentationFiles() > 0) || (representation != null) && representation.getNumberOfDocumentationFiles() > 0) {
+    private static boolean containsDocumentation(final AIP aip, final Representation representation, final IndexedAIP indexedAIP, final IndexedRepresentation indexedRepresentation) throws AuthorizationDeniedException, GenericException {
+        if ((indexedRepresentation == null && indexedAIP != null && indexedAIP.getNumberOfDocumentationFiles() > 0) || (indexedRepresentation != null && indexedRepresentation.getNumberOfDocumentationFiles() > 0)) {
             return true;
         }
 
@@ -376,26 +387,25 @@ public class METSUtils {
         }
     }
 
-    private static boolean containsSubmissions(final IndexedAIP aip, final IndexedRepresentation representation) throws AuthorizationDeniedException, GenericException {
+    private static boolean containsSubmissions(final AIP aip, final Representation representation, final IndexedAIP indexedAIP) throws AuthorizationDeniedException, GenericException {
         if (representation == null) {
-            if (aip.getNumberOfSubmissionFiles() > 0) {
+            if (indexedAIP != null && indexedAIP.getNumberOfSubmissionFiles() > 0) {
                 return true;
             }
 
             try {
                 return containsResources(ModelUtils.getSubmissionStoragePath(aip.getId()));
             } catch (RequestNotValidException ignored) {
-                return false;
             }
         }
 
         return false;
     }
 
-    private static boolean containsRepresentations(IndexedAIP aip, IndexedRepresentation representation) throws AuthorizationDeniedException, GenericException {
+    private static boolean containsRepresentations(final AIP aip, final Representation representation, final IndexedAIP indexedAIP) throws AuthorizationDeniedException, GenericException {
         if (representation == null) {
-            if (aip.getFields().containsKey("hasRepresentations")) {
-                Object hasRepresentationsField = aip.getFields().get("hasRepresentations");
+            if (indexedAIP != null && indexedAIP.getFields().containsKey("hasRepresentations")) {
+                Object hasRepresentationsField = indexedAIP.getFields().get("hasRepresentations");
                 if (hasRepresentationsField instanceof Boolean hasRepresentationsValue) {
                     return hasRepresentationsValue;
                 }
@@ -404,36 +414,34 @@ public class METSUtils {
             try {
                 return containsResources(ModelUtils.getRepresentationsContainerPath(aip.getId()));
             } catch (RequestNotValidException ignored) {
-                return false;
             }
         }
 
         return false;
     }
 
-    private static boolean containsRepresentationData(IndexedAIP aip, IndexedRepresentation representation) throws AuthorizationDeniedException, GenericException {
+    private static boolean containsRepresentationData(final AIP aip, final Representation representation, final IndexedRepresentation indexedRepresentation) throws AuthorizationDeniedException, GenericException {
         if (representation != null) {
-            if (representation.getNumberOfDataFiles() > 0 || representation.getNumberOfDataFolders() > 0) {
+            if (indexedRepresentation != null && (indexedRepresentation.getNumberOfDataFiles() > 0 || indexedRepresentation.getNumberOfDataFolders() > 0)) {
                 return true;
             }
 
             try {
                 return containsResources(ModelUtils.getRepresentationDataStoragePath(aip.getId(), representation.getId()));
             } catch (RequestNotValidException ignored) {
-                return false;
             }
         }
 
         return false;
     }
 
-    private static IPHeader getIpHeader(IndexedAIP aip) {
+    private static IPHeader getIpHeader(final AIP aip) {
         final IPHeader ipHeader = new IPHeader();
 
         IPAgent agentSoftware = new IPAgent("ETERNA", "CREATOR", null, METSEnums.CreatorType.OTHER, "SOFTWARE", "0.5.0", IPAgentNoteTypeEnum.SOFTWARE_VERSION);
         ipHeader.addAgent(agentSoftware);
 
-        if (aip != null) {
+        if (aip.getCreatedBy() != null) {
             IPAgent agentCreator = new IPAgent(aip.getCreatedBy(), "CREATOR", null, METSEnums.CreatorType.INDIVIDUAL, null, aip.getCreatedBy(), IPAgentNoteTypeEnum.IDENTIFICATIONCODE);
             ipHeader.addAgent(agentCreator);
         }
@@ -592,13 +600,13 @@ public class METSUtils {
         }
     }
 
-    private static void processRepresentations(final MetsWrapper metsWrapper, final AIP aip, final CSIPProfile profile, final Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
+    private static void processRepresentations(final MetsWrapper metsWrapper, final AIP aip, final CSIPProfile profile, final Boolean includeAncestors, final Report reportItem) throws AuthorizationDeniedException, MetsGeneratorException {
         final String aipId = aip.getId();
 
         for (Representation rep : aip.getRepresentations()) {
             try {
                 final String repId = rep.getId();
-                final MetsWrapper repMetsWrapper = METSUtils.generateMETS(aip, rep, profile, reportItem);
+                final MetsWrapper repMetsWrapper = METSUtils.generateMETS(aip, rep, profile, includeAncestors, reportItem);
                 repMetsWrapper.getMainDiv().setTYPE(rep.getType()); // TODO: Check if rep.getType is the same as representation.getStatus in commons ip: https://github.com/keeps/commons-ip/blob/9f2ead8a297d6515d2018c4351de9cf89a1efaff/src/main/java/org/roda_project/commons_ip2/model/impl/eark/EARKUtils.java#L265
 
                 final Mets mets = repMetsWrapper.getMets();

@@ -36,16 +36,13 @@ import org.roda.core.plugins.orchestrate.pekko.PekkoJobStateInfoActor;
 import org.roda.core.plugins.orchestrate.pekko.PekkoWorkerActor;
 import org.roda.core.storage.DefaultStoragePath;
 import org.roda.core.storage.StorageService;
-import org.roda_project.commons_ip.utils.IPException;
 import org.roda_project.commons_ip2.mets_v1_12.beans.Mets;
 import org.roda_project.commons_ip2.model.IPConstants;
 import org.roda_project.commons_ip2.model.MetsWrapper;
 import se.whitered.eterna.plugins.metsgenerator.exceptions.MetsGeneratorException;
 
-import javax.xml.datatype.DatatypeConfigurationException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -56,6 +53,7 @@ import java.util.Properties;
 
 public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
     private static final String PLUGIN_PARAMS_IP_PROFILE = "parameter.ip_profile";
+    private static final String PLUGIN_PARAMS_INCLUDE_ANCESTORS = "parameter.include_ancestor_information";
     private static final List<String> PLUGIN_PARAMS_IP_PROFILE_VALUES = Arrays.asList("sip", "aip", "dip");
 
     private static final Properties props = new Properties();
@@ -70,6 +68,14 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
                         .withDescription("An E-ARK CSIP has an associated profile to describe whether the package is intended for submission, archival or dissemination. Please choose which profile you want to generate METS files for.")
                         .withPossibleValues(PLUGIN_PARAMS_IP_PROFILE_VALUES)
                         .withDefaultValue("sip")
+                        .build()
+        );
+
+        pluginParameters.put(
+                PLUGIN_PARAMS_INCLUDE_ANCESTORS,
+                PluginParameter.getBuilder(PLUGIN_PARAMS_INCLUDE_ANCESTORS, "Include Ancestor IDs", PluginParameterType.BOOLEAN)
+                        .isMandatory(false)
+                        .withDescription("Including ancestor ids makes it possible to import the information package into the correct node in the receiving archive.")
                         .build()
         );
 
@@ -140,6 +146,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
         for (Map.Entry<String, String> entry : parameters.entrySet()) {
             switch (entry.getKey()) {
                 case RodaConstants.PLUGIN_PARAMS_JOB_ID:
+                case PLUGIN_PARAMS_INCLUDE_ANCESTORS:
                     break;
 
                 case PLUGIN_PARAMS_IP_PROFILE:
@@ -151,6 +158,10 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
                 default:
                     throw new InvalidParameterException(String.format("Invalid parameter \"%s\"", entry.getKey()));
             }
+        }
+
+        if (!parameters.containsKey(PLUGIN_PARAMS_INCLUDE_ANCESTORS)) {
+            parameters.put(PLUGIN_PARAMS_INCLUDE_ANCESTORS, String.valueOf(false));
         }
 
         super.setParameterValues(parameters);
@@ -169,6 +180,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
         for (Map.Entry<String, String> entry : this.getParameterValues().entrySet()) {
             switch (entry.getKey()) {
                 case PLUGIN_PARAMS_IP_PROFILE -> valid = PLUGIN_PARAMS_IP_PROFILE_VALUES.contains(entry.getValue());
+                case PLUGIN_PARAMS_INCLUDE_ANCESTORS -> {}
                 default -> valid = false;
             }
 
@@ -254,7 +266,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      */
     @Override
     public List<String> getCategories() {
-        return Collections.singletonList(RodaConstants.PLUGIN_CATEGORY_MAINTENANCE);
+        return Collections.singletonList(RodaConstants.PLUGIN_CATEGORY_MISC);
     }
 
     /**
@@ -275,11 +287,9 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
     /**
      * <p>Method called to initialize this {@link Plugin}.</p>
      * <p>Called by {@link PluginManager#registerPlugin(Plugin plugin)} on startup or when a new plugin is placed in the plugins directory.</p>
-     *
-     * @throws PluginException thrown if initialization of the plugin failed
      */
     @Override
-    public void init() throws PluginException {
+    public void init()  {
         MimeTypeUtils.init();
         System.out.println("Init METS Generator");
     }
@@ -297,17 +307,16 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
 
     /**
      * <p>Method called before executing the main action of the plugin.</p>
-     * <p>Useful to setup the job before executing a job with many sub tasks.</p>
+     * <p>Useful to set up the job before executing a job with many subtasks.</p>
      * <p>Called by {@link PekkoJobStateInfoActor}.handleBeforeAllExecuteIsReady(Object msg)</p>
      *
      * @param indexService   reference to {@link IndexService}
      * @param modelService   reference to {@link ModelService}
      * @param storageService reference to {@link StorageService}
      * @return {@link Report} containing the status, progress and diagnostics for the job
-     * @throws PluginException if an error occurred during execution
      */
     @Override
-    public Report beforeAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) throws PluginException {
+    public Report beforeAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) {
         return new Report();
     }
 
@@ -329,6 +338,8 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
             throw new PluginException(String.format("Parameter: \"%s\" not defined", PLUGIN_PARAMS_IP_PROFILE));
         }
 
+        Boolean includeAncestors = Boolean.valueOf(this.getParameterValues().getOrDefault(PLUGIN_PARAMS_INCLUDE_ANCESTORS, "false"));
+
         final String ipProfileValue = this.getParameterValues().get(PLUGIN_PARAMS_IP_PROFILE);
         final CSIPProfile csipProfile = switch (ipProfileValue) {
             case "sip" -> CSIPProfile.SIP_v2_2_0;
@@ -340,12 +351,12 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
         return PluginHelper.processObjects(this, new RODAObjectsProcessingLogic<AIP>() {
             @Override
             public void process(IndexService indexService, ModelService modelService, StorageService storageService, Report report, Job cachedJob, JobPluginInfo jobPluginInfo, Plugin<AIP> plugin, List<AIP> objects) {
-                processAIP(indexService, modelService, storageService, report, cachedJob, jobPluginInfo, objects, csipProfile);
+                processAIP(indexService, modelService, storageService, report, cachedJob, jobPluginInfo, objects, csipProfile, includeAncestors);
             }
         }, indexService, modelService, storageService, liteList);
     }
 
-    private void processAIP(IndexService indexService, ModelService modelService, StorageService storageService, Report report, Job job, JobPluginInfo jobPluginInfo, List<AIP> aips, CSIPProfile csipProfile) {
+    private void processAIP(IndexService indexService, ModelService modelService, StorageService storageService, Report report, Job job, JobPluginInfo jobPluginInfo, List<AIP> aips, CSIPProfile csipProfile, Boolean includeAncestors) {
         for (AIP aip : aips) {
             Report reportItem = PluginHelper.initPluginReportItem(this, aip.getId(), AIP.class);
             try {
@@ -356,7 +367,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
                     throw new MetsGeneratorException("Could not retrieve AIP ID");
                 }
 
-                final MetsWrapper metsWrapper = METSUtils.generateMETS(aip, csipProfile, reportItem);
+                final MetsWrapper metsWrapper = METSUtils.generateMETS(aip, csipProfile, includeAncestors, reportItem);
                 final Mets mets = metsWrapper.getMets();
 
                 try {
@@ -393,10 +404,9 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      * @param modelService   reference to {@link ModelService}
      * @param storageService reference to {@link StorageService}
      * @return {@link Report} containing the status, progress and diagnostics for the job
-     * @throws PluginException if an error occurred during execution
      */
     @Override
-    public Report afterAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) throws PluginException {
+    public Report afterAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) {
         return new Report();
     }
 
