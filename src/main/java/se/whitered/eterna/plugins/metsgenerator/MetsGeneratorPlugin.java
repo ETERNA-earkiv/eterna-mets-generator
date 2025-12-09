@@ -59,6 +59,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
     private static final Properties props = new Properties();
 
     private static final Map<String, PluginParameter> pluginParameters = new HashMap<>();
+    private static final List<String> categories = new ArrayList<>();
 
     static {
         pluginParameters.put(
@@ -78,6 +79,9 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
                         .withDescription("Including ancestor ids makes it possible to import the information package into the correct node in the receiving archive.")
                         .build()
         );
+
+        categories.add(RodaConstants.PLUGIN_CATEGORY_MISC);
+        categories.add(RodaConstants.PLUGIN_CATEGORY_E_ARCHIVING);
 
         try (InputStream in = MetsGeneratorPlugin.class.getResourceAsStream("/plugin.properties")) {
             if (in != null) {
@@ -266,7 +270,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      */
     @Override
     public List<String> getCategories() {
-        return Collections.singletonList(RodaConstants.PLUGIN_CATEGORY_MISC);
+        return categories;
     }
 
     /**
