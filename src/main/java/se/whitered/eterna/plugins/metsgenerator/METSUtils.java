@@ -193,7 +193,10 @@ public class METSUtils {
     }
 
     private static void setCreationDate(MetsWrapper metsWrapper, AIP aip) {
-        metsWrapper.getMets().getMetsHdr().setCREATEDATE(createXmlGregorianCalender(aip.getCreatedOn()));
+        Date createdOn = aip.getCreatedOn();
+        if (createdOn != null) {
+            metsWrapper.getMets().getMetsHdr().setCREATEDATE(createXmlGregorianCalender(aip.getCreatedOn()));
+        }
     }
 
     private static IndexedAIP getIndexedAIP(final String aipId, final Report reportItem) {
