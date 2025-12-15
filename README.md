@@ -36,7 +36,7 @@ The METS Generator currently does not handle:
 
 ## Installation
 
-Download [image-converter.zip](http://github.com/ETERNA-earkiv/eterna-image-converter/releases/latest/download/image-converter.zip) and extract it into `/.roda/config/plugins/` and restart ETERNA.
+Download [mets-generator.zip](https://github.com/ETERNA-earkiv/eterna-mets-generator/releases/download/v1.0.0/mets-generator.zip) and extract it into `/.roda/config/plugins/` and restart ETERNA.
 
 ## License
 
