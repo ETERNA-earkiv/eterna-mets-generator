@@ -320,7 +320,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      * @return {@link Report} containing the status, progress and diagnostics for the job
      */
     @Override
-    public Report beforeAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) {
+    public Report beforeAllExecute(IndexService indexService, ModelService modelService) {
         return new Report();
     }
 
@@ -335,7 +335,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      * @throws PluginException if an error occurred during execution
      */
     @Override
-    public Report execute(IndexService indexService, ModelService modelService, StorageService storageService, List<LiteOptionalWithCause> liteList) throws PluginException {
+    public Report execute(IndexService indexService, ModelService modelService, List<LiteOptionalWithCause> liteList) throws PluginException {
         System.out.println("METS Generator execute");
 
         if (!this.getParameterValues().containsKey(PLUGIN_PARAMS_IP_PROFILE)) {
@@ -354,13 +354,13 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
 
         return PluginHelper.processObjects(this, new RODAObjectsProcessingLogic<AIP>() {
             @Override
-            public void process(IndexService indexService, ModelService modelService, StorageService storageService, Report report, Job cachedJob, JobPluginInfo jobPluginInfo, Plugin<AIP> plugin, List<AIP> objects) {
-                processAIP(indexService, modelService, storageService, report, cachedJob, jobPluginInfo, objects, csipProfile, includeAncestors);
+            public void process(IndexService indexService, ModelService modelService, Report report, Job cachedJob, JobPluginInfo jobPluginInfo, Plugin<AIP> plugin, List<AIP> objects) {
+                processAIP(indexService, modelService, report, cachedJob, jobPluginInfo, objects, csipProfile, includeAncestors);
             }
-        }, indexService, modelService, storageService, liteList);
+        }, indexService, modelService, liteList);
     }
 
-    private void processAIP(IndexService indexService, ModelService modelService, StorageService storageService, Report report, Job job, JobPluginInfo jobPluginInfo, List<AIP> aips, CSIPProfile csipProfile, Boolean includeAncestors) {
+    private void processAIP(IndexService indexService, ModelService modelService, Report report, Job job, JobPluginInfo jobPluginInfo, List<AIP> aips, CSIPProfile csipProfile, Boolean includeAncestors) {
         for (AIP aip : aips) {
             Report reportItem = PluginHelper.initPluginReportItem(this, aip.getId(), AIP.class);
             try {
@@ -379,7 +379,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
                     final StoragePath metsStoragePath = DefaultStoragePath.parse(aipStoragePath, IPConstants.METS_FILE);
 
                     MetsContentPayload contentPayload = new MetsContentPayload(mets, true);
-                    storageService.updateBinaryContent(metsStoragePath, contentPayload, false, true);
+                    modelService.getStorage().updateBinaryContent(metsStoragePath, contentPayload, false, true, false ,null);
                 } catch (RequestNotValidException | GenericException | NotFoundException |
                          AuthorizationDeniedException e) {
                     throw new MetsGeneratorException("Could not create new IP level METS file");
@@ -410,7 +410,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      * @return {@link Report} containing the status, progress and diagnostics for the job
      */
     @Override
-    public Report afterAllExecute(IndexService indexService, ModelService modelService, StorageService storageService) {
+    public Report afterAllExecute(IndexService indexService, ModelService modelService) {
         return new Report();
     }
 

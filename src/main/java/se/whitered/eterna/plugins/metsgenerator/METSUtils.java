@@ -615,7 +615,7 @@ public class METSUtils {
                 final StoragePath metsStoragePath = DefaultStoragePath.parse(repStoragePath, IPConstants.METS_FILE);
 
                 MetsContentPayload contentPayload = new MetsContentPayload(mets, false);
-                storageService.updateBinaryContent(metsStoragePath, contentPayload, false, true);
+                storageService.updateBinaryContent(metsStoragePath, contentPayload, false, true, false, null);
 
                 final Path aipPath = METSUtils.storagePathToPath(ModelUtils.getAIPStoragePath(aipId)).normalize();
                 final Path repPath = METSUtils.storagePathToPath(ModelUtils.getRepresentationStoragePath(aipId, repId)).normalize();
