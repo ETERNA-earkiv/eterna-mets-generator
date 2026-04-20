@@ -316,7 +316,6 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      *
      * @param indexService   reference to {@link IndexService}
      * @param modelService   reference to {@link ModelService}
-     * @param storageService reference to {@link StorageService}
      * @return {@link Report} containing the status, progress and diagnostics for the job
      */
     @Override
@@ -329,7 +328,6 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      *
      * @param indexService   reference to {@link IndexService}
      * @param modelService   reference to {@link ModelService}
-     * @param storageService reference to {@link StorageService}
      * @param liteList       list of objects to execute the plugin against
      * @return {@link Report} containing the status, progress and diagnostics for the job
      * @throws PluginException if an error occurred during execution
@@ -379,7 +377,7 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
                     final StoragePath metsStoragePath = DefaultStoragePath.parse(aipStoragePath, IPConstants.METS_FILE);
 
                     MetsContentPayload contentPayload = new MetsContentPayload(mets, true);
-                    modelService.getStorage().updateBinaryContent(metsStoragePath, contentPayload, false, true, false ,null);
+                    modelService.getStorage().updateBinaryContent(metsStoragePath, contentPayload, false, true, false, null);
                 } catch (RequestNotValidException | GenericException | NotFoundException |
                          AuthorizationDeniedException e) {
                     throw new MetsGeneratorException("Could not create new IP level METS file");
@@ -406,7 +404,6 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
      *
      * @param indexService   reference to {@link IndexService}
      * @param modelService   reference to {@link ModelService}
-     * @param storageService reference to {@link StorageService}
      * @return {@link Report} containing the status, progress and diagnostics for the job
      */
     @Override
