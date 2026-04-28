@@ -8,13 +8,13 @@
     <artifactId>mets-generator</artifactId>
 
     <name>METS Generator</name>
-    <version>1.0.1</version>
+    <version>2.0.0</version>
     <description>Updates AIPs &amp; representations with E-ARK IP METS files.</description>
 
     <parent>
         <groupId>org.roda-project</groupId>
         <artifactId>eterna</artifactId>
-        <version>0.6.0</version>
+        <version>1.0.0-alpha-SNAPSHOT</version>
     </parent>
 
     <properties>
