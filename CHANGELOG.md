@@ -1,4 +1,13 @@
 # Changelog
+## [2.0.0]
+### Changes
+- Update parent POM dependency to 1.0.0-alpha-SNAPSHOT
+- Refactor internal storage handling and plugin interface for improved maintainability
+- Fix binary content update for more stable save behavior
+
+### Bug Fixes
+- METS generator now skips generation if the file already exists, preventing unintended overwrites
+
 ## [1.0.1]
 ### Changes
 - Update plugin compatibility to ETERNA 0.6.0
