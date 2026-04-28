@@ -1,5 +1,6 @@
 package se.whitered.eterna.plugins.metsgenerator;
 
+import org.roda.core.RodaCoreFactory;
 import org.roda.core.data.common.RodaConstants;
 import org.roda.core.data.common.RodaConstants.PreservationEventType;
 import org.roda.core.data.exceptions.AuthorizationDeniedException;
@@ -35,7 +36,6 @@ import org.roda.core.plugins.orchestrate.pekko.PekkoBackgroundWorkerActor;
 import org.roda.core.plugins.orchestrate.pekko.PekkoJobStateInfoActor;
 import org.roda.core.plugins.orchestrate.pekko.PekkoWorkerActor;
 import org.roda.core.storage.DefaultStoragePath;
-import org.roda.core.storage.StorageService;
 import org.roda_project.commons_ip2.mets_v1_12.beans.Mets;
 import org.roda_project.commons_ip2.model.IPConstants;
 import org.roda_project.commons_ip2.model.MetsWrapper;
@@ -376,16 +376,27 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
                     final StoragePath aipStoragePath = ModelUtils.getAIPStoragePath(aip.getId());
                     final StoragePath metsStoragePath = DefaultStoragePath.parse(aipStoragePath, IPConstants.METS_FILE);
 
-                    MetsContentPayload contentPayload = new MetsContentPayload(mets, true);
-                    modelService.getStorage().updateBinaryContent(metsStoragePath, contentPayload, false, true, false, null);
+                    java.io.File file = RodaCoreFactory.getStorageService().getDirectAccess(metsStoragePath).getPath().toFile();
+                    if (!file.exists()) {
+                        MetsContentPayload contentPayload = new MetsContentPayload(mets, true);
+                        modelService.getStorage().updateBinaryContent(metsStoragePath, contentPayload, false, true, false, null);
+
+                        jobPluginInfo.incrementObjectsProcessedWithSuccess();
+                        reportItem.setPluginState(PluginState.SUCCESS);
+                        reportItem.setHtmlPluginDetails(true).setPluginDetails(String.format("Created E-ARK CSIP version '%s' METS file(s) with a '%s' profile.", csipProfile.getVersion(), csipProfile.getProfile().toString()));
+
+                    } else {
+                        jobPluginInfo.incrementObjectsProcessedWithSuccess();
+                        reportItem.setPluginState(PluginState.SKIPPED);
+                        reportItem.setHtmlPluginDetails(true).setPluginDetails("METS file already exists.");
+                    }
+
+
                 } catch (RequestNotValidException | GenericException | NotFoundException |
                          AuthorizationDeniedException e) {
                     throw new MetsGeneratorException("Could not create new IP level METS file");
                 }
 
-                jobPluginInfo.incrementObjectsProcessedWithSuccess();
-                reportItem.setPluginState(PluginState.SUCCESS);
-                reportItem.setHtmlPluginDetails(true).setPluginDetails(String.format("Created E-ARK CSIP version '%s' METS file(s) with a '%s' profile.", csipProfile.getVersion(), csipProfile.getProfile().toString()));
 
             } catch (MetsGeneratorException | AuthorizationDeniedException e) {
                 reportItem.setPluginState(PluginState.FAILURE).setPluginDetails(e.getMessage());
