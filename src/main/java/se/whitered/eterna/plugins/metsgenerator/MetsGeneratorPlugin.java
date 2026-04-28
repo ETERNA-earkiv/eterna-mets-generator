@@ -64,9 +64,9 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
     static {
         pluginParameters.put(
                 PLUGIN_PARAMS_IP_PROFILE,
-                PluginParameter.getBuilder(PLUGIN_PARAMS_IP_PROFILE, "IP Profile", PluginParameterType.DROPDOWN)
+                PluginParameter.getBuilder(PLUGIN_PARAMS_IP_PROFILE, "IP-profil", PluginParameterType.DROPDOWN)
                         .isMandatory(false)
-                        .withDescription("An E-ARK CSIP has an associated profile to describe whether the package is intended for submission, archival or dissemination. Please choose which profile you want to generate METS files for.")
+                        .withDescription("Ett E-ARK CSIP har en associerad profil som beskriver om paketet är avsett för inleverans, arkivering eller spridning. Välj vilken profil du vill generera METS-filer för.")
                         .withPossibleValues(PLUGIN_PARAMS_IP_PROFILE_VALUES)
                         .withDefaultValue("sip")
                         .build()
@@ -74,9 +74,9 @@ public class MetsGeneratorPlugin extends AbstractPlugin<AIP> {
 
         pluginParameters.put(
                 PLUGIN_PARAMS_INCLUDE_ANCESTORS,
-                PluginParameter.getBuilder(PLUGIN_PARAMS_INCLUDE_ANCESTORS, "Include Ancestor IDs", PluginParameterType.BOOLEAN)
+                PluginParameter.getBuilder(PLUGIN_PARAMS_INCLUDE_ANCESTORS, "Inkludera förfäder-ID:n", PluginParameterType.BOOLEAN)
                         .isMandatory(false)
-                        .withDescription("Including ancestor ids makes it possible to import the information package into the correct node in the receiving archive.")
+                        .withDescription("Att inkludera förfäder-ID:n gör det möjligt att importera informationspaketet till rätt nod i det mottagande arkivet.")
                         .build()
         );
 
